@@ -41,6 +41,11 @@ public class GlobalExceptionHandler {
 		return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
 	}
 
+	@ExceptionHandler(ApiException.class)
+	public ResponseEntity<ErrorResponse> handleApiException(ApiException ex, WebRequest request) {
+		return build(ex.getStatus(), ex.getMessage(), request, null, ex.getErrorCode());
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, WebRequest request) {
 		Map<String, String> fieldErrors = new LinkedHashMap<>();
@@ -51,6 +56,11 @@ public class GlobalExceptionHandler {
 
 	private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, WebRequest request,
 			Map<String, String> fieldErrors) {
+		return build(status, message, request, fieldErrors, null);
+	}
+
+	private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, WebRequest request,
+			Map<String, String> fieldErrors, String errorCode) {
 		String path = request.getDescription(false).replace("uri=", "");
 		ErrorResponse body = new ErrorResponse(
 				LocalDateTime.now(),
@@ -58,7 +68,8 @@ public class GlobalExceptionHandler {
 				status.getReasonPhrase(),
 				message,
 				path,
-				fieldErrors);
+				fieldErrors,
+				errorCode);
 		return ResponseEntity.status(status).body(body);
 	}
 }

@@ -15,6 +15,10 @@ import com.school_management_webapi.dto.response.AuthResponse;
 import com.school_management_webapi.dto.response.UserResponse;
 import com.school_management_webapi.entity.PasswordResetToken;
 import com.school_management_webapi.entity.RefreshToken;
+import com.school_management_webapi.entity.Tenant;
+import com.school_management_webapi.entity.TenantStatus;
+import com.school_management_webapi.entity.TenantUser;
+import com.school_management_webapi.entity.TenantUserRole;
 import com.school_management_webapi.entity.User;
 import com.school_management_webapi.entity.UserStatus;
 import com.school_management_webapi.exception.DuplicateResourceException;
@@ -25,6 +29,8 @@ import com.school_management_webapi.exception.ResourceNotFoundException;
 import com.school_management_webapi.mapper.UserMapper;
 import com.school_management_webapi.repository.PasswordResetTokenRepository;
 import com.school_management_webapi.repository.RefreshTokenRepository;
+import com.school_management_webapi.repository.TenantRepository;
+import com.school_management_webapi.repository.TenantUserRepository;
 import com.school_management_webapi.repository.UserRepository;
 import com.school_management_webapi.security.JwtService;
 import com.school_management_webapi.security.TokenHasher;
@@ -41,6 +47,8 @@ public class AuthServiceImpl implements AuthService {
 	private final UserRepository userRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final PasswordResetTokenRepository passwordResetTokenRepository;
+	private final TenantRepository tenantRepository;
+	private final TenantUserRepository tenantUserRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
 	private final EmailService emailService;
@@ -61,6 +69,17 @@ public class AuthServiceImpl implements AuthService {
 				.status(UserStatus.ACTIVE)
 				.build();
 		User saved = userRepository.save(user);
+
+		Tenant tenant = tenantRepository.save(Tenant.builder()
+				.name(request.name() + "'s Organization")
+				.status(TenantStatus.ACTIVE)
+				.build());
+
+		tenantUserRepository.save(TenantUser.builder()
+				.tenant(tenant)
+				.user(saved)
+				.role(TenantUserRole.OWNER)
+				.build());
 
 		return issueAuthResponse(saved);
 	}
@@ -155,7 +174,7 @@ public class AuthServiceImpl implements AuthService {
 	public UserResponse getCurrentUser(UUID userId) {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-		return UserMapper.toResponse(user);
+		return UserMapper.toResponse(user, resolveTenantId(user.getId()));
 	}
 
 	private AuthResponse issueAuthResponse(User user) {
@@ -174,6 +193,12 @@ public class AuthServiceImpl implements AuthService {
 				refreshToken,
 				"Bearer",
 				jwtService.getAccessTokenExpirationMs() / 1000,
-				UserMapper.toResponse(user));
+				UserMapper.toResponse(user, resolveTenantId(user.getId())));
+	}
+
+	private UUID resolveTenantId(UUID userId) {
+		return tenantUserRepository.findByUserId(userId)
+				.map(tenantUser -> tenantUser.getTenant().getId())
+				.orElse(null);
 	}
 }

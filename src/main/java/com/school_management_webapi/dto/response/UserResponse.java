@@ -12,5 +12,6 @@ public record UserResponse(
 		UserStatus status,
 		LocalDateTime emailVerifiedAt,
 		LocalDateTime lastLoginAt,
-		LocalDateTime createdAt) {
+		LocalDateTime createdAt,
+		UUID tenantId) {
 }
