@@ -1,0 +1,27 @@
+package com.school_management_webapi.service;
+
+import java.util.UUID;
+
+import com.school_management_webapi.dto.request.ForgotPasswordRequest;
+import com.school_management_webapi.dto.request.LoginRequest;
+import com.school_management_webapi.dto.request.RegisterRequest;
+import com.school_management_webapi.dto.request.ResetPasswordRequest;
+import com.school_management_webapi.dto.response.AuthResponse;
+import com.school_management_webapi.dto.response.UserResponse;
+
+public interface AuthService {
+
+	AuthResponse register(RegisterRequest request);
+
+	AuthResponse login(LoginRequest request);
+
+	void logout(String refreshToken);
+
+	AuthResponse refreshToken(String refreshToken);
+
+	void forgotPassword(ForgotPasswordRequest request);
+
+	void resetPassword(ResetPasswordRequest request);
+
+	UserResponse getCurrentUser(UUID userId);
+}

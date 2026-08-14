@@ -26,6 +26,21 @@ public class GlobalExceptionHandler {
 		return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
 	}
 
+	@ExceptionHandler(InvalidCredentialsException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex, WebRequest request) {
+		return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request, null);
+	}
+
+	@ExceptionHandler(InvalidTokenException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex, WebRequest request) {
+		return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request, null);
+	}
+
+	@ExceptionHandler(PasswordMismatchException.class)
+	public ResponseEntity<ErrorResponse> handlePasswordMismatch(PasswordMismatchException ex, WebRequest request) {
+		return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, WebRequest request) {
 		Map<String, String> fieldErrors = new LinkedHashMap<>();
