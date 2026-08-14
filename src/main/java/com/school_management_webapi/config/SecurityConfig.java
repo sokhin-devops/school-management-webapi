@@ -32,7 +32,9 @@ public class SecurityConfig {
 				.csrf(csrf -> csrf.disable())
 				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/v1/auth/me", "/api/v1/subscriptions/**").authenticated()
+						.requestMatchers("/api/v1/auth/me", "/api/v1/subscriptions/**", "/api/v1/onboarding/**",
+								"/api/v1/schools/**", "/api/v1/branches/**", "/api/v1/academic-years/**")
+						.authenticated()
 						.anyRequest().permitAll())
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
