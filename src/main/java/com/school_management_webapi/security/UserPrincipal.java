@@ -11,6 +11,8 @@ import com.school_management_webapi.entity.UserStatus;
 
 public class UserPrincipal implements UserDetails {
 
+	private static final long serialVersionUID = 1L;
+
 	private final User user;
 
 	public UserPrincipal(User user) {

@@ -14,6 +14,8 @@ import com.school_management_webapi.entity.SchoolStatus;
 import com.school_management_webapi.entity.Tenant;
 import com.school_management_webapi.exception.ApiException;
 import com.school_management_webapi.mapper.SchoolMapper;
+import com.school_management_webapi.repository.AcademicYearRepository;
+import com.school_management_webapi.repository.BranchRepository;
 import com.school_management_webapi.repository.SchoolRepository;
 import com.school_management_webapi.repository.TenantRepository;
 
@@ -25,25 +27,35 @@ import lombok.RequiredArgsConstructor;
 public class SchoolServiceImpl implements SchoolService {
 
 	private final SchoolRepository schoolRepository;
+	private final BranchRepository branchRepository;
+	private final AcademicYearRepository academicYearRepository;
 	private final TenantRepository tenantRepository;
 	private final TenantAuthorizationService tenantAuthorizationService;
+	private final CurrentSubscriptionResolver currentSubscriptionResolver;
 
 	@Override
 	public SchoolResponse create(UUID userId, SchoolRequest request) {
 		UUID tenantId = tenantAuthorizationService.requireTenantId(userId);
+		// Onboarding runs after plan selection, so a school can only be created once
+		// the tenant is on a live subscription.
+		currentSubscriptionResolver.resolveActive(tenantId);
+
+		String name = request.name().trim();
+		ensureSchoolNameIsFree(tenantId, name, null);
+
 		Tenant tenant = tenantRepository.getReferenceById(tenantId);
 
 		School school = School.builder()
 				.tenant(tenant)
-				.name(request.name())
+				.name(name)
 				.type(request.type())
-				.email(request.email())
-				.phone(request.phone())
-				.address(request.address())
+				.email(request.email().trim())
+				.phone(request.phone().trim())
+				.address(request.address().trim())
 				.status(SchoolStatus.ACTIVE)
 				.build();
 
-		return SchoolMapper.toResponse(schoolRepository.save(school));
+		return SchoolMapper.toResponse(schoolRepository.saveAndFlush(school));
 	}
 
 	@Override
@@ -67,23 +79,43 @@ public class SchoolServiceImpl implements SchoolService {
 		UUID tenantId = tenantAuthorizationService.requireTenantId(userId);
 		School school = findSchoolOrThrow(schoolId, tenantId);
 
-		school.setName(request.name());
-		school.setType(request.type());
-		school.setEmail(request.email());
-		school.setPhone(request.phone());
-		school.setAddress(request.address());
+		String name = request.name().trim();
+		ensureSchoolNameIsFree(tenantId, name, school.getId());
 
-		return SchoolMapper.toResponse(schoolRepository.save(school));
+		school.setName(name);
+		school.setType(request.type());
+		school.setEmail(request.email().trim());
+		school.setPhone(request.phone().trim());
+		school.setAddress(request.address().trim());
+
+		return SchoolMapper.toResponse(schoolRepository.saveAndFlush(school));
 	}
 
 	@Override
 	public void delete(UUID userId, UUID schoolId) {
 		UUID tenantId = tenantAuthorizationService.requireTenantId(userId);
-		schoolRepository.delete(findSchoolOrThrow(schoolId, tenantId));
+		School school = findSchoolOrThrow(schoolId, tenantId);
+
+		// Branches and academic years are meaningless without their school, and the
+		// soft-delete filter on School would otherwise leave them permanently
+		// unreachable but still counted against the plan's branch limit.
+		branchRepository.deleteAll(branchRepository.findBySchoolIdOrderByCreatedAtAsc(school.getId()));
+		academicYearRepository.deleteAll(academicYearRepository.findBySchoolIdOrderByStartDateDesc(school.getId()));
+
+		schoolRepository.delete(school);
 	}
 
 	private School findSchoolOrThrow(UUID schoolId, UUID tenantId) {
 		return schoolRepository.findByIdAndTenantId(schoolId, tenantId)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SCHOOL_NOT_FOUND", "School not found."));
+	}
+
+	private void ensureSchoolNameIsFree(UUID tenantId, String name, UUID excludedSchoolId) {
+		schoolRepository.findByTenantIdAndNameIgnoreCase(tenantId, name)
+				.filter(existing -> !existing.getId().equals(excludedSchoolId))
+				.ifPresent(existing -> {
+					throw new ApiException(HttpStatus.CONFLICT, "SCHOOL_NAME_ALREADY_EXISTS",
+							"A school named '" + name + "' already exists for this tenant.");
+				});
 	}
 }

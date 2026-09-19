@@ -7,6 +7,7 @@ import com.school_management_webapi.dto.request.LoginRequest;
 import com.school_management_webapi.dto.request.RegisterRequest;
 import com.school_management_webapi.dto.request.ResetPasswordRequest;
 import com.school_management_webapi.dto.response.AuthResponse;
+import com.school_management_webapi.dto.response.ForgotPasswordResponse;
 import com.school_management_webapi.dto.response.UserResponse;
 
 public interface AuthService {
@@ -19,7 +20,7 @@ public interface AuthService {
 
 	AuthResponse refreshToken(String refreshToken);
 
-	void forgotPassword(ForgotPasswordRequest request);
+	ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request);
 
 	void resetPassword(ResetPasswordRequest request);
 

@@ -9,7 +9,7 @@ import com.school_management_webapi.entity.TenantUser;
 
 public interface TenantUserRepository extends JpaRepository<TenantUser, UUID> {
 
-	Optional<TenantUser> findByUserId(UUID userId);
+	Optional<TenantUser> findFirstByUserIdOrderByCreatedAtAsc(UUID userId);
 
 	boolean existsByTenantIdAndUserId(UUID tenantId, UUID userId);
 }

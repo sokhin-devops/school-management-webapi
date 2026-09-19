@@ -1,5 +1,6 @@
 package com.school_management_webapi.repository;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,4 +14,10 @@ public interface StudentRepository extends JpaRepository<Student, UUID>, JpaSpec
 	boolean existsByStudentCodeAndSchoolId(String studentCode, UUID schoolId);
 
 	Optional<Student> findByStudentCodeAndSchoolId(String studentCode, UUID schoolId);
+
+	/**
+	 * Student usage is counted across every school of the tenant, because
+	 * {@code Plan.maxStudents} is a tenant-wide allowance.
+	 */
+	long countBySchoolIdIn(Collection<UUID> schoolIds);
 }

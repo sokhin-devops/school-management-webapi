@@ -1,5 +1,6 @@
 package com.school_management_webapi.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,6 +17,8 @@ public interface AcademicYearRepository extends JpaRepository<AcademicYear, UUID
 
 	Optional<AcademicYear> findFirstBySchoolIdOrderByCreatedAtAsc(UUID schoolId);
 
+	Optional<AcademicYear> findBySchoolIdAndNameIgnoreCase(UUID schoolId, String name);
+
 	boolean existsBySchoolId(UUID schoolId);
 
 	@Query("SELECT a FROM AcademicYear a WHERE a.id = :id AND a.school.tenant.id = :tenantId")
@@ -23,4 +26,19 @@ public interface AcademicYearRepository extends JpaRepository<AcademicYear, UUID
 
 	@Query("SELECT a FROM AcademicYear a WHERE a.school.tenant.id = :tenantId ORDER BY a.startDate DESC")
 	List<AcademicYear> findAllByTenantId(@Param("tenantId") UUID tenantId);
+
+	/**
+	 * Two ranges overlap when each starts on or before the other ends. {@code
+	 * excludedId} lets an update ignore the row being edited.
+	 */
+	@Query("""
+			SELECT a FROM AcademicYear a
+			WHERE a.school.id = :schoolId
+			  AND (:excludedId IS NULL OR a.id <> :excludedId)
+			  AND a.startDate <= :endDate
+			  AND a.endDate >= :startDate
+			ORDER BY a.startDate ASC
+			""")
+	List<AcademicYear> findOverlapping(@Param("schoolId") UUID schoolId, @Param("startDate") LocalDate startDate,
+			@Param("endDate") LocalDate endDate, @Param("excludedId") UUID excludedId);
 }

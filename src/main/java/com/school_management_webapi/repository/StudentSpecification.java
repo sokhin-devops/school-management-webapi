@@ -1,5 +1,6 @@
 package com.school_management_webapi.repository;
 
+import java.util.Collection;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -13,9 +14,19 @@ public final class StudentSpecification {
 	private StudentSpecification() {
 	}
 
-	public static Specification<Student> filterBy(UUID schoolId, StudentStatus status, Gender gender, String search) {
+	/**
+	 * @param allowedSchoolIds the schools the caller's tenant owns. An empty
+	 *                         collection matches nothing, which is the correct
+	 *                         answer for a tenant that has no school yet.
+	 */
+	public static Specification<Student> filterBy(Collection<UUID> allowedSchoolIds, UUID schoolId,
+			StudentStatus status, Gender gender, String search) {
 		return (root, query, cb) -> {
-			var predicate = cb.conjunction();
+			if (allowedSchoolIds.isEmpty()) {
+				return cb.disjunction();
+			}
+
+			var predicate = cb.and(root.get("schoolId").in(allowedSchoolIds));
 
 			if (schoolId != null) {
 				predicate = cb.and(predicate, cb.equal(root.get("schoolId"), schoolId));

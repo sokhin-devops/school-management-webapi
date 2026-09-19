@@ -16,6 +16,7 @@ import com.school_management_webapi.dto.request.RegisterRequest;
 import com.school_management_webapi.dto.request.ResetPasswordRequest;
 import com.school_management_webapi.dto.response.ApiResponse;
 import com.school_management_webapi.dto.response.AuthResponse;
+import com.school_management_webapi.dto.response.ForgotPasswordResponse;
 import com.school_management_webapi.dto.response.UserResponse;
 import com.school_management_webapi.security.UserPrincipal;
 import com.school_management_webapi.service.AuthService;
@@ -64,9 +65,11 @@ public class AuthController {
 
 	@PostMapping("/forgot-password")
 	@Operation(summary = "Request a password reset token via email")
-	public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-		authService.forgotPassword(request);
-		return ResponseEntity.ok(ApiResponse.success("If the email exists, a password reset link has been sent", null));
+	public ResponseEntity<ApiResponse<ForgotPasswordResponse>> forgotPassword(
+			@Valid @RequestBody ForgotPasswordRequest request) {
+		ForgotPasswordResponse response = authService.forgotPassword(request);
+		return ResponseEntity
+				.ok(ApiResponse.success("If the email exists, a password reset link has been sent", response));
 	}
 
 	@PostMapping("/reset-password")

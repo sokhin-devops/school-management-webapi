@@ -4,15 +4,16 @@ import java.util.UUID;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record BranchRequest(
 		@NotNull(message = "schoolId is required") UUID schoolId,
 
-		@NotBlank(message = "name is required") String name,
+		@NotBlank(message = "name is required") @Size(max = 150, message = "name must be at most 150 characters") String name,
 
-		@NotBlank(message = "address is required") String address,
+		@NotBlank(message = "address is required") @Size(max = 1000, message = "address must be at most 1000 characters") String address,
 
-		String phone,
+		@Size(max = 30, message = "phone must be at most 30 characters") String phone,
 
 		boolean mainBranch) {
 }

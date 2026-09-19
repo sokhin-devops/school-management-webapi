@@ -129,3 +129,23 @@ Response: `200 OK` with `data: null`, or `404 Not Found` if the id doesn't exist
 ## Notes
 - All endpoints are documented in Swagger UI at `/swagger-ui.html` (see [SwaggerConfig](../config/SwaggerConfig.java)).
 - See [docs/todo/student-todo.md](../todo/student-todo.md) for follow-up work planned for this module.
+
+
+
+
+├── 01-authentication.md       ← START HERE
+    ├── 02-plans-subscription.md
+    ├── 03-school-onboarding.md
+    ├── 04-users-roles.md
+    ├── 05-school-settings.md
+    ├── 06-academic.md
+    ├── 07-students.md
+    ├── 08-teachers.md
+    ├── 09-parents.md
+    ├── 10-enrollment.md
+    ├── 11-attendance.md
+    ├── 12-timetable.md
+    ├── 13-exams-grades.md
+    ├── 14-finance.md
+    ├── 15-notifications.md
+    └── 16-reports.md

@@ -3,6 +3,7 @@ package com.school_management_webapi.service;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,7 @@ import com.school_management_webapi.dto.request.LoginRequest;
 import com.school_management_webapi.dto.request.RegisterRequest;
 import com.school_management_webapi.dto.request.ResetPasswordRequest;
 import com.school_management_webapi.dto.response.AuthResponse;
+import com.school_management_webapi.dto.response.ForgotPasswordResponse;
 import com.school_management_webapi.dto.response.UserResponse;
 import com.school_management_webapi.entity.PasswordResetToken;
 import com.school_management_webapi.entity.RefreshToken;
@@ -43,6 +45,12 @@ import lombok.RequiredArgsConstructor;
 public class AuthServiceImpl implements AuthService {
 
 	private static final long PASSWORD_RESET_TOKEN_TTL_MINUTES = 30;
+
+	@Value("${app.password-reset.expose-token:true}")
+	private boolean exposeResetTokenInResponse;
+
+	@Value("${app.frontend.reset-password-url:http://localhost:4200/reset-password}")
+	private String resetPasswordUrl;
 
 	private final UserRepository userRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
@@ -132,8 +140,8 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
-	public void forgotPassword(ForgotPasswordRequest request) {
-		userRepository.findByEmail(request.email()).ifPresent(user -> {
+	public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
+		String resetUrl = userRepository.findByEmail(request.email()).map(user -> {
 			String rawToken = UUID.randomUUID().toString() + UUID.randomUUID();
 			PasswordResetToken resetToken = PasswordResetToken.builder()
 					.user(user)
@@ -142,7 +150,11 @@ public class AuthServiceImpl implements AuthService {
 					.build();
 			passwordResetTokenRepository.save(resetToken);
 			emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
-		});
+
+			return exposeResetTokenInResponse ? resetPasswordUrl + "?token=" + rawToken : null;
+		}).orElse(null);
+
+		return new ForgotPasswordResponse(resetUrl);
 	}
 
 	@Override
@@ -197,7 +209,7 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	private UUID resolveTenantId(UUID userId) {
-		return tenantUserRepository.findByUserId(userId)
+		return tenantUserRepository.findFirstByUserIdOrderByCreatedAtAsc(userId)
 				.map(tenantUser -> tenantUser.getTenant().getId())
 				.orElse(null);
 	}

@@ -16,6 +16,8 @@ public interface BranchRepository extends JpaRepository<Branch, UUID> {
 
 	Optional<Branch> findFirstBySchoolIdOrderByCreatedAtAsc(UUID schoolId);
 
+	Optional<Branch> findBySchoolIdAndNameIgnoreCase(UUID schoolId, String name);
+
 	boolean existsBySchoolId(UUID schoolId);
 
 	@Query("SELECT b FROM Branch b WHERE b.id = :id AND b.school.tenant.id = :tenantId")
@@ -23,4 +25,11 @@ public interface BranchRepository extends JpaRepository<Branch, UUID> {
 
 	@Query("SELECT b FROM Branch b WHERE b.school.tenant.id = :tenantId ORDER BY b.createdAt ASC")
 	List<Branch> findAllByTenantId(@Param("tenantId") UUID tenantId);
+
+	/**
+	 * Branch usage is counted per tenant, not per school, because
+	 * {@code Plan.maxBranches} is a tenant-wide allowance.
+	 */
+	@Query("SELECT COUNT(b) FROM Branch b WHERE b.school.tenant.id = :tenantId")
+	long countByTenantId(@Param("tenantId") UUID tenantId);
 }

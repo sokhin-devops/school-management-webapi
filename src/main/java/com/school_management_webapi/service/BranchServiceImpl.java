@@ -27,27 +27,35 @@ public class BranchServiceImpl implements BranchService {
 	private final BranchRepository branchRepository;
 	private final SchoolRepository schoolRepository;
 	private final TenantAuthorizationService tenantAuthorizationService;
+	private final SubscriptionLimitService subscriptionLimitService;
 
 	@Override
 	public BranchResponse create(UUID userId, BranchRequest request) {
 		UUID tenantId = tenantAuthorizationService.requireTenantId(userId);
 		School school = resolveSchoolForTenant(request.schoolId(), tenantId);
 
+		// Resolves the live subscription as a side effect, so a tenant without one
+		// gets SUBSCRIPTION_REQUIRED rather than an unmetered branch.
+		subscriptionLimitService.checkLimit(tenantId, LimitType.BRANCHES, branchRepository.countByTenantId(tenantId));
+
+		String name = request.name().trim();
+		ensureBranchNameIsFree(school.getId(), name, null);
+
 		boolean makeMain = request.mainBranch() || !branchRepository.existsBySchoolId(school.getId());
 		if (makeMain) {
-			unsetExistingMainBranch(school.getId());
+			unsetExistingMainBranch(school.getId(), null);
 		}
 
 		Branch branch = Branch.builder()
 				.school(school)
-				.name(request.name())
-				.address(request.address())
-				.phone(request.phone())
+				.name(name)
+				.address(request.address().trim())
+				.phone(normalizePhone(request.phone()))
 				.mainBranch(makeMain)
 				.status(BranchStatus.ACTIVE)
 				.build();
 
-		return BranchMapper.toResponse(branchRepository.save(branch));
+		return BranchMapper.toResponse(branchRepository.saveAndFlush(branch));
 	}
 
 	@Override
@@ -71,23 +79,49 @@ public class BranchServiceImpl implements BranchService {
 	public BranchResponse update(UUID userId, UUID branchId, BranchRequest request) {
 		UUID tenantId = tenantAuthorizationService.requireTenantId(userId);
 		Branch branch = findBranchOrThrow(branchId, tenantId);
+		UUID schoolId = branch.getSchool().getId();
+
+		String name = request.name().trim();
+		ensureBranchNameIsFree(schoolId, name, branch.getId());
 
 		if (request.mainBranch()) {
-			unsetExistingMainBranch(branch.getSchool().getId());
+			unsetExistingMainBranch(schoolId, branch.getId());
+		} else if (branch.isMainBranch()) {
+			// Every school keeps exactly one main branch; clearing the flag has to go
+			// through promoting a different branch instead.
+			throw new ApiException(HttpStatus.CONFLICT, "MAIN_BRANCH_REQUIRED",
+					"A school must have one main branch. Mark another branch as main instead.");
 		}
 
-		branch.setName(request.name());
-		branch.setAddress(request.address());
-		branch.setPhone(request.phone());
+		branch.setName(name);
+		branch.setAddress(request.address().trim());
+		branch.setPhone(normalizePhone(request.phone()));
 		branch.setMainBranch(request.mainBranch());
 
-		return BranchMapper.toResponse(branchRepository.save(branch));
+		return BranchMapper.toResponse(branchRepository.saveAndFlush(branch));
 	}
 
 	@Override
 	public void delete(UUID userId, UUID branchId) {
 		UUID tenantId = tenantAuthorizationService.requireTenantId(userId);
-		branchRepository.delete(findBranchOrThrow(branchId, tenantId));
+		Branch branch = findBranchOrThrow(branchId, tenantId);
+		UUID schoolId = branch.getSchool().getId();
+
+		// Resolved before the delete so the promotion target is never the row that is
+		// on its way out of the persistence context.
+		Branch promoted = branch.isMainBranch()
+				? branchRepository.findBySchoolIdOrderByCreatedAtAsc(schoolId).stream()
+						.filter(remaining -> !remaining.getId().equals(branch.getId()))
+						.findFirst()
+						.orElse(null)
+				: null;
+
+		branchRepository.delete(branch);
+
+		if (promoted != null) {
+			promoted.setMainBranch(true);
+			branchRepository.save(promoted);
+		}
 	}
 
 	private Branch findBranchOrThrow(UUID branchId, UUID tenantId) {
@@ -100,12 +134,26 @@ public class BranchServiceImpl implements BranchService {
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SCHOOL_NOT_FOUND", "School not found."));
 	}
 
-	private void unsetExistingMainBranch(UUID schoolId) {
+	private void ensureBranchNameIsFree(UUID schoolId, String name, UUID excludedBranchId) {
+		branchRepository.findBySchoolIdAndNameIgnoreCase(schoolId, name)
+				.filter(existing -> !existing.getId().equals(excludedBranchId))
+				.ifPresent(existing -> {
+					throw new ApiException(HttpStatus.CONFLICT, "BRANCH_NAME_ALREADY_EXISTS",
+							"A branch named '" + name + "' already exists for this school.");
+				});
+	}
+
+	private void unsetExistingMainBranch(UUID schoolId, UUID excludedBranchId) {
 		branchRepository.findBySchoolIdOrderByCreatedAtAsc(schoolId).stream()
 				.filter(Branch::isMainBranch)
+				.filter(existing -> !existing.getId().equals(excludedBranchId))
 				.forEach(existing -> {
 					existing.setMainBranch(false);
 					branchRepository.save(existing);
 				});
+	}
+
+	private String normalizePhone(String phone) {
+		return phone == null || phone.isBlank() ? null : phone.trim();
 	}
 }

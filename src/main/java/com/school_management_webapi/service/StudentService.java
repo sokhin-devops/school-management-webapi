@@ -14,16 +14,16 @@ import com.school_management_webapi.entity.StudentStatus;
 
 public interface StudentService {
 
-	StudentResponse create(StudentCreateRequest request);
+	StudentResponse create(UUID userId, StudentCreateRequest request);
 
-	StudentResponse getById(UUID id);
+	StudentResponse getById(UUID userId, UUID id);
 
-	PagedResponse<StudentResponse> list(UUID schoolId, StudentStatus status, Gender gender, String search,
+	PagedResponse<StudentResponse> list(UUID userId, UUID schoolId, StudentStatus status, Gender gender, String search,
 			Pageable pageable);
 
-	StudentResponse update(UUID id, StudentUpdateRequest request);
+	StudentResponse update(UUID userId, UUID id, StudentUpdateRequest request);
 
-	StudentResponse patch(UUID id, StudentPatchRequest request);
+	StudentResponse patch(UUID userId, UUID id, StudentPatchRequest request);
 
-	void delete(UUID id);
+	void delete(UUID userId, UUID id);
 }

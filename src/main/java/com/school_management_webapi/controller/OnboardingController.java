@@ -16,6 +16,7 @@ import com.school_management_webapi.dto.response.AcademicYearResponse;
 import com.school_management_webapi.dto.response.ApiResponse;
 import com.school_management_webapi.dto.response.BranchResponse;
 import com.school_management_webapi.dto.response.OnboardingStatusResponse;
+import com.school_management_webapi.dto.response.OnboardingStepResult;
 import com.school_management_webapi.dto.response.SchoolResponse;
 import com.school_management_webapi.security.UserPrincipal;
 import com.school_management_webapi.service.OnboardingService;
@@ -34,7 +35,7 @@ public class OnboardingController {
 	private final OnboardingService onboardingService;
 
 	@GetMapping("/status")
-	@Operation(summary = "Get the tenant's onboarding progress")
+	@Operation(summary = "Get the onboarding progress of the tenant and the step to resume from")
 	public ResponseEntity<ApiResponse<OnboardingStatusResponse>> status(
 			@AuthenticationPrincipal UserPrincipal principal) {
 		return ResponseEntity.ok(ApiResponse.success("Onboarding status retrieved",
@@ -42,27 +43,38 @@ public class OnboardingController {
 	}
 
 	@PostMapping("/school")
-	@Operation(summary = "Onboarding step 1: create the tenant's first school")
+	@Operation(summary = "Onboarding step 1: create or revise the school of the tenant")
 	public ResponseEntity<ApiResponse<SchoolResponse>> school(@AuthenticationPrincipal UserPrincipal principal,
 			@Valid @RequestBody SchoolRequest request) {
-		SchoolResponse response = onboardingService.createSchool(principal.getUser().getId(), request);
-		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("School setup completed", response));
+		return respond(onboardingService.saveSchool(principal.getUser().getId(), request), "School setup completed",
+				"School setup updated");
 	}
 
 	@PostMapping("/branch")
-	@Operation(summary = "Onboarding step 2: create the first branch for the tenant's school")
+	@Operation(summary = "Onboarding step 2: create or revise the first branch of the school")
 	public ResponseEntity<ApiResponse<BranchResponse>> branch(@AuthenticationPrincipal UserPrincipal principal,
 			@Valid @RequestBody OnboardingBranchRequest request) {
-		BranchResponse response = onboardingService.createBranch(principal.getUser().getId(), request);
-		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Branch setup completed", response));
+		return respond(onboardingService.saveBranch(principal.getUser().getId(), request), "Branch setup completed",
+				"Branch setup updated");
 	}
 
 	@PostMapping("/academic-year")
-	@Operation(summary = "Onboarding step 3: create the first academic year and complete setup")
+	@Operation(summary = "Onboarding step 3: create or revise the first academic year and complete setup")
 	public ResponseEntity<ApiResponse<AcademicYearResponse>> academicYear(
 			@AuthenticationPrincipal UserPrincipal principal,
 			@Valid @RequestBody OnboardingAcademicYearRequest request) {
-		AcademicYearResponse response = onboardingService.createAcademicYear(principal.getUser().getId(), request);
-		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Onboarding complete", response));
+		return respond(onboardingService.saveAcademicYear(principal.getUser().getId(), request), "Onboarding complete",
+				"Academic year setup updated");
+	}
+
+	/**
+	 * 201 the first time a step is answered, 200 when the wizard comes back to a
+	 * step that was already answered.
+	 */
+	private <T> ResponseEntity<ApiResponse<T>> respond(OnboardingStepResult<T> result, String createdMessage,
+			String updatedMessage) {
+		HttpStatus status = result.created() ? HttpStatus.CREATED : HttpStatus.OK;
+		String message = result.created() ? createdMessage : updatedMessage;
+		return ResponseEntity.status(status).body(ApiResponse.success(message, result.data()));
 	}
 }

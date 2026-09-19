@@ -17,6 +17,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,7 +30,7 @@ import lombok.Setter;
  * see docs/todo/student.md for the rest of the module roadmap.
  */
 @Entity
-@Table(name = "students")
+@Table(name = "students", uniqueConstraints = @UniqueConstraint(name = "uk_students_school_id_student_code", columnNames = { "school_id", "student_code" }))
 @SQLDelete(sql = "UPDATE students SET deleted_at = now(), updated_at = now() WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 @Getter
@@ -47,7 +48,12 @@ public class Student {
 	@Column(name = "school_id", nullable = false)
 	private UUID schoolId;
 
-	@Column(name = "student_code", nullable = false, unique = true)
+	/**
+	 * Unique per school, not globally - see the table-level constraint. A legacy
+	 * single-column unique index on student_code has to be dropped by hand because
+	 * ddl-auto=update never removes constraints; see docs/plain/3-school-onboarding.md.
+	 */
+	@Column(name = "student_code", nullable = false)
 	private String studentCode;
 
 	@Column(name = "first_name", nullable = false)

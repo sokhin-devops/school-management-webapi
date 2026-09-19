@@ -22,7 +22,7 @@ public class TenantAuthorizationService {
 	private final TenantUserRepository tenantUserRepository;
 
 	public UUID requireTenantId(UUID userId) {
-		return tenantUserRepository.findByUserId(userId)
+		return tenantUserRepository.findFirstByUserIdOrderByCreatedAtAsc(userId)
 				.map(tenantUser -> tenantUser.getTenant().getId())
 				.orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
 						"User does not belong to a tenant"));
