@@ -114,7 +114,9 @@ class StudentServiceImplTenantIsolationTest {
 	}
 
 	private StudentCreateRequest createRequest(UUID schoolId) {
-		return new StudentCreateRequest(schoolId, "S001", "Dara", null, "Sok", null, Gender.MALE,
+		// branchId and classGroupId are null: a student can exist before they are
+		// placed, and this test is about tenant isolation rather than placement.
+		return new StudentCreateRequest(schoolId, null, null, "S001", "Dara", null, "Sok", null, Gender.MALE,
 				LocalDate.of(2015, 4, 3), null, null, null, null, null, LocalDate.of(2026, 1, 15));
 	}
 

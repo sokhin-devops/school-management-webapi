@@ -15,6 +15,8 @@ public final class StudentMapper {
 	public static Student toEntity(StudentCreateRequest request) {
 		return Student.builder()
 				.schoolId(request.schoolId())
+				.branchId(request.branchId())
+				.classGroupId(request.classGroupId())
 				.studentCode(request.studentCode())
 				.firstName(request.firstName())
 				.middleName(request.middleName())
@@ -34,6 +36,8 @@ public final class StudentMapper {
 
 	public static void updateEntity(Student student, StudentUpdateRequest request) {
 		student.setSchoolId(request.schoolId());
+		student.setBranchId(request.branchId());
+		student.setClassGroupId(request.classGroupId());
 		student.setStudentCode(request.studentCode());
 		student.setFirstName(request.firstName());
 		student.setMiddleName(request.middleName());
@@ -53,6 +57,12 @@ public final class StudentMapper {
 	public static void patchEntity(Student student, StudentPatchRequest request) {
 		if (request.schoolId() != null) {
 			student.setSchoolId(request.schoolId());
+		}
+		if (request.branchId() != null) {
+			student.setBranchId(request.branchId());
+		}
+		if (request.classGroupId() != null) {
+			student.setClassGroupId(request.classGroupId());
 		}
 		if (request.studentCode() != null) {
 			student.setStudentCode(request.studentCode());
@@ -108,6 +118,8 @@ public final class StudentMapper {
 		return new StudentResponse(
 				student.getId(),
 				student.getSchoolId(),
+				student.getBranchId(),
+				student.getClassGroupId(),
 				student.getStudentCode(),
 				student.getFirstName(),
 				student.getMiddleName(),

@@ -14,6 +14,10 @@ import jakarta.validation.constraints.PastOrPresent;
 public record StudentCreateRequest(
 		@NotNull(message = "schoolId is required") UUID schoolId,
 
+		UUID branchId,
+
+		UUID classGroupId,
+
 		@NotBlank(message = "studentCode is required") String studentCode,
 
 		@NotBlank(message = "firstName is required") String firstName,

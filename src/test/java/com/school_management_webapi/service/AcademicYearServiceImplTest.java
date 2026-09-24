@@ -149,7 +149,7 @@ class AcademicYearServiceImplTest {
 				.id(UUID.randomUUID())
 				.tenant(Tenant.builder().id(TENANT_ID).name("Sunrise").status(TenantStatus.ACTIVE).build())
 				.name("Sunrise Academy")
-				.type(SchoolType.PRIMARY)
+				.type(SchoolType.PRIMARY_SCHOOL)
 				.email("hello@sunrise.test")
 				.phone("099123456")
 				.address("12 Main Street")

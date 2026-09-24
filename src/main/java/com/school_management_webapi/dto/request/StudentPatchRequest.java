@@ -14,6 +14,11 @@ import jakarta.validation.constraints.Email;
  */
 public record StudentPatchRequest(
 		UUID schoolId,
+
+		UUID branchId,
+
+		UUID classGroupId,
+
 		String studentCode,
 		String firstName,
 		String middleName,

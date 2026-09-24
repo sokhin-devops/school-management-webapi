@@ -10,6 +10,8 @@ import com.school_management_webapi.entity.StudentStatus;
 public record StudentResponse(
 		UUID id,
 		UUID schoolId,
+		UUID branchId,
+		UUID classGroupId,
 		String studentCode,
 		String firstName,
 		String middleName,

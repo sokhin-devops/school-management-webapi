@@ -219,7 +219,7 @@ class OnboardingServiceImplTest {
 	}
 
 	private SchoolRequest schoolRequest() {
-		return new SchoolRequest("Sunrise Academy", SchoolType.PRIMARY, "hello@sunrise.test", "099123456",
+		return new SchoolRequest("Sunrise Academy", SchoolType.PRIMARY_SCHOOL, "hello@sunrise.test", "099123456",
 				"12 Main Street");
 	}
 
@@ -228,7 +228,7 @@ class OnboardingServiceImplTest {
 				.id(UUID.randomUUID())
 				.tenant(Tenant.builder().id(TENANT_ID).name("Sunrise").status(TenantStatus.ACTIVE).build())
 				.name("Sunrise Academy")
-				.type(SchoolType.PRIMARY)
+				.type(SchoolType.PRIMARY_SCHOOL)
 				.email("hello@sunrise.test")
 				.phone("099123456")
 				.address("12 Main Street")

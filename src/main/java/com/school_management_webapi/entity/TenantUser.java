@@ -1,12 +1,16 @@
 package com.school_management_webapi.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -45,9 +49,25 @@ public class TenantUser {
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
+	/**
+	 * The coarse membership level auth checks against. Kept alongside roleId
+	 * because the owner of a tenant must stay recognisable even while the
+	 * permission grid below is being edited.
+	 */
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private TenantUserRole role;
+
+	/** The role from Settings that carries this user's permission grid. */
+	@Column(name = "role_id")
+	private UUID roleId;
+
+	/** Empty means every branch of the tenant. */
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "tenant_user_branches", joinColumns = @JoinColumn(name = "tenant_user_id"))
+	@Column(name = "branch_id", nullable = false)
+	@Builder.Default
+	private List<UUID> branchIds = new ArrayList<>();
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)

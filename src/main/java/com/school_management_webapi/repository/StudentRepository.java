@@ -20,4 +20,6 @@ public interface StudentRepository extends JpaRepository<Student, UUID>, JpaSpec
 	 * {@code Plan.maxStudents} is a tenant-wide allowance.
 	 */
 	long countBySchoolIdIn(Collection<UUID> schoolIds);
+
+	long countByBranchIdIn(Collection<UUID> branchIds);
 }

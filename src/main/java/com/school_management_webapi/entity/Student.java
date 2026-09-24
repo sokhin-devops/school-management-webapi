@@ -49,6 +49,20 @@ public class Student {
 	private UUID schoolId;
 
 	/**
+	 * Which branch the student attends, and which class they sit in.
+	 *
+	 * Students predate the branch-scoped modules and are keyed by school, so both
+	 * are nullable: a record created before this existed has neither, and the
+	 * dashboard and register treat a student without a class as unplaced rather
+	 * than as an error.
+	 */
+	@Column(name = "branch_id")
+	private UUID branchId;
+
+	@Column(name = "class_group_id")
+	private UUID classGroupId;
+
+	/**
 	 * Unique per school, not globally - see the table-level constraint. A legacy
 	 * single-column unique index on student_code has to be dropped by hand because
 	 * ddl-auto=update never removes constraints; see docs/plain/3-school-onboarding.md.
