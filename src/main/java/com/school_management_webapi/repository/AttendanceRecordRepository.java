@@ -17,6 +17,9 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
 
 	long countByBranchIdIn(java.util.Collection<UUID> branchIds);
 
+	List<AttendanceRecord> findByBranchIdInAndAttendanceDateBetween(Collection<UUID> branchIds,
+			LocalDate from, LocalDate to);
+
 	/**
 	 * The four columns below are what identifies one sitting of one class. Session
 	 * is stored as an empty string rather than null for a class taken once a day,
@@ -45,4 +48,6 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
 	List<Object[]> summariseByDay(@Param("branchIds") Collection<UUID> branchIds,
 			@Param("from") LocalDate from, @Param("to") LocalDate to,
 			@Param("present") AttendanceStatus present);
+
+	List<AttendanceRecord> findByBranchIdIn(Collection<UUID> branchIds);
 }

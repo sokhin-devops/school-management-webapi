@@ -72,7 +72,8 @@ public class SecurityConfig {
 				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(
-								"/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/logout",
+								"/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/login/two-factor",
+								"/api/v1/auth/logout",
 								"/api/v1/auth/refresh-token", "/api/v1/auth/forgot-password",
 								"/api/v1/auth/reset-password",
 								"/api/v1/plans/**",

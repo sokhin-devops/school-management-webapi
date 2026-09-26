@@ -17,6 +17,12 @@ repositories {
 	mavenCentral()
 }
 
+// Writes META-INF/build-info.properties, which System settings reads to show
+// the version that is actually running rather than a number typed into the UI.
+springBoot {
+	buildInfo()
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'

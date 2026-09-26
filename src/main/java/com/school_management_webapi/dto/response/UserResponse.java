@@ -13,5 +13,6 @@ public record UserResponse(
 		LocalDateTime emailVerifiedAt,
 		LocalDateTime lastLoginAt,
 		LocalDateTime createdAt,
-		UUID tenantId) {
+		UUID tenantId,
+		boolean twoFactorEnabled) {
 }

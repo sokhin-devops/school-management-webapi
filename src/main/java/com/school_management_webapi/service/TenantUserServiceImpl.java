@@ -25,6 +25,7 @@ import com.school_management_webapi.repository.RoleRepository;
 import com.school_management_webapi.repository.TenantRepository;
 import com.school_management_webapi.repository.TenantUserRepository;
 import com.school_management_webapi.repository.UserRepository;
+import com.school_management_webapi.entity.AuditAction;
 
 import lombok.RequiredArgsConstructor;
 
@@ -46,6 +47,8 @@ public class TenantUserServiceImpl implements TenantUserService {
 	private final RoleRepository roleRepository;
 	private final TenantAuthorizationService tenantAuthorizationService;
 	private final PasswordEncoder passwordEncoder;
+	private final NotificationService notificationService;
+	private final AuditService auditService;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -79,7 +82,11 @@ public class TenantUserServiceImpl implements TenantUserService {
 				.branchIds(request.branchIds() == null ? new ArrayList<>() : new ArrayList<>(request.branchIds()))
 				.build();
 
-		return toResponse(tenantUserRepository.saveAndFlush(membership));
+		TenantUserResponse invited = toResponse(tenantUserRepository.saveAndFlush(membership));
+		auditService.record(userId, AuditAction.USER_INVITED, request.fullName().trim() + " <" + email + "> as " + role.getName());
+		notificationService.notifySchool(userId, NotificationEvent.USER_INVITED,
+				request.fullName().trim() + " was invited as " + role.getName() + ".", "/settings/users-roles");
+		return invited;
 	}
 
 	@Override
@@ -99,7 +106,10 @@ public class TenantUserServiceImpl implements TenantUserService {
 		account.setStatus(request.status());
 		userRepository.saveAndFlush(account);
 
-		return toResponse(tenantUserRepository.saveAndFlush(membership));
+		TenantUserResponse updated = toResponse(tenantUserRepository.saveAndFlush(membership));
+		auditService.record(userId, AuditAction.USER_UPDATED,
+				account.getName() + ": " + role.getName() + ", " + request.status());
+		return updated;
 	}
 
 	@Override
@@ -118,7 +128,9 @@ public class TenantUserServiceImpl implements TenantUserService {
 
 		// Only the membership goes: the account may belong to other tenants, and
 		// deleting it here would take their access with it.
+		String removedName = membership.getUser().getName();
 		tenantUserRepository.delete(membership);
+		auditService.record(userId, AuditAction.USER_REMOVED, removedName);
 	}
 
 	/**
@@ -168,6 +180,7 @@ public class TenantUserServiceImpl implements TenantUserService {
 				List.copyOf(membership.getBranchIds()),
 				account.getStatus(),
 				account.getLastLoginAt(),
-				membership.getCreatedAt());
+				membership.getCreatedAt(),
+				account.isTwoFactorEnabled());
 	}
 }

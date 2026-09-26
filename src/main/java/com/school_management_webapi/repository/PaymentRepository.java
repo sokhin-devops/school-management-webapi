@@ -1,9 +1,10 @@
 package com.school_management_webapi.repository;
 
-import java.util.Optional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,6 +23,9 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>, JpaSpec
 
 	long countByBranchIdIn(java.util.Collection<UUID> branchIds);
 
+	List<Payment> findByBranchIdInAndPaidOnBetween(Collection<UUID> branchIds,
+			LocalDate from, LocalDate to);
+
 	@Query("""
 			SELECT COALESCE(SUM(p.amount), 0)
 			FROM Payment p
@@ -29,4 +33,6 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>, JpaSpec
 			""")
 	BigDecimal sumAmount(@Param("branchIds") Collection<UUID> branchIds, @Param("status") PaymentStatus status,
 			@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+	List<Payment> findByBranchIdIn(Collection<UUID> branchIds);
 }

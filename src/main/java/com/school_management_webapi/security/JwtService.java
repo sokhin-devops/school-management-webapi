@@ -23,6 +23,15 @@ public class JwtService {
 	private static final String CLAIM_TYPE = "type";
 	private static final String TOKEN_TYPE_ACCESS = "access";
 	private static final String TOKEN_TYPE_REFRESH = "refresh";
+	/**
+	 * Proof that the password was right, and nothing more: it opens no session
+	 * and the authentication filter refuses it, so all it can do is be
+	 * exchanged, with a code, for a real sign-in.
+	 */
+	private static final String TOKEN_TYPE_TWO_FACTOR = "two-factor";
+	private static final long TWO_FACTOR_TOKEN_EXPIRATION_MS = 5 * 60 * 1000;
+	/** The sign-in an access token belongs to, so a revoked session stops at once. */
+	private static final String CLAIM_SESSION = "sid";
 
 	private final SecretKey key;
 	private final long accessTokenExpirationMs;
@@ -37,12 +46,31 @@ public class JwtService {
 		this.refreshTokenExpirationMs = refreshTokenExpirationMs;
 	}
 
-	public String generateAccessToken(User user) {
-		return buildToken(user, accessTokenExpirationMs, TOKEN_TYPE_ACCESS);
+	public String generateAccessToken(User user, UUID sessionId) {
+		return buildToken(user, accessTokenExpirationMs, TOKEN_TYPE_ACCESS, sessionId);
 	}
 
 	public String generateRefreshToken(User user) {
-		return buildToken(user, refreshTokenExpirationMs, TOKEN_TYPE_REFRESH);
+		return buildToken(user, refreshTokenExpirationMs, TOKEN_TYPE_REFRESH, null);
+	}
+
+	public String generateTwoFactorToken(User user) {
+		return buildToken(user, TWO_FACTOR_TOKEN_EXPIRATION_MS, TOKEN_TYPE_TWO_FACTOR, null);
+	}
+
+	public boolean isTwoFactorToken(String token) {
+		return TOKEN_TYPE_TWO_FACTOR.equals(extractType(token));
+	}
+
+	/** The token's own id, which counts wrong codes against one challenge. */
+	public String extractTokenId(String token) {
+		return parseClaims(token).getId();
+	}
+
+	/** Null for a token issued before sessions were tracked. */
+	public UUID extractSessionId(String token) {
+		String sessionId = parseClaims(token).get(CLAIM_SESSION, String.class);
+		return sessionId == null ? null : UUID.fromString(sessionId);
 	}
 
 	public long getAccessTokenExpirationMs() {
@@ -86,9 +114,18 @@ public class JwtService {
 				.getPayload();
 	}
 
-	private String buildToken(User user, long expirationMs, String type) {
+	private String buildToken(User user, long expirationMs, String type, UUID sessionId) {
 		Instant now = Instant.now();
-		return Jwts.builder()
+		var builder = Jwts.builder();
+		if (sessionId != null) {
+			builder.claim(CLAIM_SESSION, sessionId.toString());
+		}
+		return builder
+				// Everything else in a token is fixed per user and per second, so two
+				// issued in the same second were identical - and the refresh token is
+				// stored by its hash under a unique index, so the second sign-in failed
+				// with 409. A random id makes every token its own.
+				.id(UUID.randomUUID().toString())
 				.subject(user.getId().toString())
 				.claim("email", user.getEmail())
 				.claim(CLAIM_TYPE, type)

@@ -29,6 +29,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
 	private final ExpenseRepository expenseRepository;
 	private final BranchScopeService branchScopeService;
+	private final NotificationService notificationService;
 
 	@Override
 	public ExpenseResponse create(UUID userId, ExpenseCreateRequest request) {
@@ -36,7 +37,15 @@ public class ExpenseServiceImpl implements ExpenseService {
 		branchScopeService.requireBranchInTenant(request.branchId(), tenantId);
 
 		Expense entity = ExpenseMapper.toEntity(request);
-		return ExpenseMapper.toResponse(expenseRepository.saveAndFlush(entity));
+		ExpenseResponse created = ExpenseMapper.toResponse(expenseRepository.saveAndFlush(entity));
+		// Only a pending expense is waiting on anyone; one entered as already
+		// approved or paid needs nothing from the people told.
+		if (request.status() == ExpenseStatus.PENDING) {
+			notificationService.notifySchool(userId, NotificationEvent.EXPENSE_SUBMITTED,
+					request.category() + ": " + request.amount().toPlainString() + " is waiting for approval.",
+					"/finance/expenses");
+		}
+		return created;
 	}
 
 	@Override

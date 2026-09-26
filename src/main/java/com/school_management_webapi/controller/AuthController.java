@@ -11,15 +11,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.school_management_webapi.dto.request.ForgotPasswordRequest;
 import com.school_management_webapi.dto.request.LoginRequest;
+import com.school_management_webapi.dto.request.TwoFactorRequest;
 import com.school_management_webapi.dto.request.RefreshTokenRequest;
 import com.school_management_webapi.dto.request.RegisterRequest;
 import com.school_management_webapi.dto.request.ResetPasswordRequest;
 import com.school_management_webapi.dto.response.ApiResponse;
 import com.school_management_webapi.dto.response.AuthResponse;
 import com.school_management_webapi.dto.response.ForgotPasswordResponse;
+import com.school_management_webapi.dto.response.MyPermissionsResponse;
 import com.school_management_webapi.dto.response.UserResponse;
 import com.school_management_webapi.security.UserPrincipal;
 import com.school_management_webapi.service.AuthService;
+import com.school_management_webapi.service.PermissionService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
 	private final AuthService authService;
+	private final PermissionService permissionService;
 
 	@PostMapping("/register")
 	@Operation(summary = "Register a new user account")
@@ -46,6 +50,14 @@ public class AuthController {
 	@Operation(summary = "Authenticate a user and issue access/refresh tokens")
 	public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
 		AuthResponse response = authService.login(request);
+		return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+	}
+
+	@PostMapping("/login/two-factor")
+	@Operation(summary = "Finish signing in with an authenticator or recovery code")
+	public ResponseEntity<ApiResponse<AuthResponse>> loginWithTwoFactor(
+			@Valid @RequestBody TwoFactorRequest.SignIn request) {
+		AuthResponse response = authService.loginWithTwoFactor(request);
 		return ResponseEntity.ok(ApiResponse.success("Login successful", response));
 	}
 
@@ -84,5 +96,13 @@ public class AuthController {
 	public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(@AuthenticationPrincipal UserPrincipal principal) {
 		UserResponse response = authService.getCurrentUser(principal.getUser().getId());
 		return ResponseEntity.ok(ApiResponse.success("Current user retrieved", response));
+	}
+
+	@GetMapping("/me/permissions")
+	@Operation(summary = "The permission grid the current user holds")
+	public ResponseEntity<ApiResponse<MyPermissionsResponse>> getMyPermissions(
+			@AuthenticationPrincipal UserPrincipal principal) {
+		MyPermissionsResponse response = permissionService.permissionsFor(principal.getUser().getId());
+		return ResponseEntity.ok(ApiResponse.success("Permissions retrieved", response));
 	}
 }

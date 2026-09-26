@@ -16,6 +16,9 @@ public final class AcademicYearMapper {
 				academicYear.getStartDate(),
 				academicYear.getEndDate(),
 				academicYear.isCurrent(),
+				academicYear.getTerms().stream()
+						.map(term -> new AcademicYearResponse.Term(term.getName(), term.getStartDate(), term.getEndDate()))
+						.toList(),
 				academicYear.getCreatedAt(),
 				academicYear.getUpdatedAt());
 	}

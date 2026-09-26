@@ -220,7 +220,7 @@ class OnboardingServiceImplTest {
 
 	private SchoolRequest schoolRequest() {
 		return new SchoolRequest("Sunrise Academy", SchoolType.PRIMARY_SCHOOL, "hello@sunrise.test", "099123456",
-				"12 Main Street");
+				"12 Main Street", null, null, null);
 	}
 
 	private School school() {

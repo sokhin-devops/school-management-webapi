@@ -144,7 +144,7 @@ class BranchServiceImplTest {
 	}
 
 	private BranchRequest request(String name, boolean mainBranch) {
-		return new BranchRequest(school.getId(), name, "12 Main Street", " 099123456 ", mainBranch);
+		return new BranchRequest(school.getId(), name, "12 Main Street", " 099123456 ", mainBranch, null);
 	}
 
 	private School school() {

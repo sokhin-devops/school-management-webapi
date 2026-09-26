@@ -52,7 +52,7 @@ public class BranchServiceImpl implements BranchService {
 				.address(request.address().trim())
 				.phone(normalizePhone(request.phone()))
 				.mainBranch(makeMain)
-				.status(BranchStatus.ACTIVE)
+				.status(request.status() != null ? request.status() : BranchStatus.ACTIVE)
 				.build();
 
 		return BranchMapper.toResponse(branchRepository.saveAndFlush(branch));
@@ -97,6 +97,9 @@ public class BranchServiceImpl implements BranchService {
 		branch.setAddress(request.address().trim());
 		branch.setPhone(normalizePhone(request.phone()));
 		branch.setMainBranch(request.mainBranch());
+		if (request.status() != null) {
+			branch.setStatus(request.status());
+		}
 
 		return BranchMapper.toResponse(branchRepository.saveAndFlush(branch));
 	}
@@ -107,14 +110,21 @@ public class BranchServiceImpl implements BranchService {
 		Branch branch = findBranchOrThrow(branchId, tenantId);
 		UUID schoolId = branch.getSchool().getId();
 
+		List<Branch> others = branchRepository.findBySchoolIdOrderByCreatedAtAsc(schoolId).stream()
+				.filter(remaining -> !remaining.getId().equals(branch.getId()))
+				.toList();
+
+		// Every record in the system is scoped to a branch, and a new branch takes
+		// its school from an existing one - a school left with none cannot be
+		// worked in, or even given a branch again, from the app.
+		if (others.isEmpty()) {
+			throw new ApiException(HttpStatus.CONFLICT, "LAST_BRANCH",
+					"A school needs at least one branch. Add another before deleting this one.");
+		}
+
 		// Resolved before the delete so the promotion target is never the row that is
 		// on its way out of the persistence context.
-		Branch promoted = branch.isMainBranch()
-				? branchRepository.findBySchoolIdOrderByCreatedAtAsc(schoolId).stream()
-						.filter(remaining -> !remaining.getId().equals(branch.getId()))
-						.findFirst()
-						.orElse(null)
-				: null;
+		Branch promoted = branch.isMainBranch() ? others.get(0) : null;
 
 		branchRepository.delete(branch);
 

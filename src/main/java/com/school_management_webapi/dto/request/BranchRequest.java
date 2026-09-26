@@ -2,6 +2,8 @@ package com.school_management_webapi.dto.request;
 
 import java.util.UUID;
 
+import com.school_management_webapi.entity.BranchStatus;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,5 +17,8 @@ public record BranchRequest(
 
 		@Size(max = 30, message = "phone must be at most 30 characters") String phone,
 
-		boolean mainBranch) {
+		boolean mainBranch,
+
+		/** Optional: a create with none is active, an update with none keeps what it had. */
+		BranchStatus status) {
 }

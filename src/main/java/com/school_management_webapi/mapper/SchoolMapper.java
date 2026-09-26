@@ -17,6 +17,11 @@ public final class SchoolMapper {
 				school.getEmail(),
 				school.getPhone(),
 				school.getAddress(),
+				school.getShortName(),
+				school.getWebsite(),
+				// A school saved before currency was stored reads as the one every
+				// amount was shown in until then.
+				school.getCurrency() != null ? school.getCurrency() : "USD",
 				school.getStatus(),
 				school.getCreatedAt(),
 				school.getUpdatedAt());

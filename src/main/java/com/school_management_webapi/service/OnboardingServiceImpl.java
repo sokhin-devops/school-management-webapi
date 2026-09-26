@@ -105,7 +105,7 @@ public class OnboardingServiceImpl implements OnboardingService {
 		School school = requireSchool(tenantId, "Complete school setup before adding a branch.");
 
 		BranchRequest branchRequest = new BranchRequest(school.getId(), request.name(), request.address(),
-				request.phone(), true);
+				request.phone(), true, null);
 
 		Optional<Branch> existing = branchRepository.findFirstBySchoolIdOrderByCreatedAtAsc(school.getId());
 		if (existing.isPresent()) {
@@ -126,7 +126,7 @@ public class OnboardingServiceImpl implements OnboardingService {
 		}
 
 		AcademicYearRequest yearRequest = new AcademicYearRequest(school.getId(), request.name(), request.startDate(),
-				request.endDate(), true);
+				request.endDate(), true, null);
 
 		Optional<AcademicYear> existing = academicYearRepository.findFirstBySchoolIdOrderByCreatedAtAsc(school.getId());
 		if (existing.isPresent()) {

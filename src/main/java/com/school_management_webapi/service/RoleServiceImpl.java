@@ -21,6 +21,7 @@ import com.school_management_webapi.exception.ResourceNotFoundException;
 import com.school_management_webapi.mapper.RoleMapper;
 import com.school_management_webapi.repository.RoleRepository;
 import com.school_management_webapi.repository.TenantUserRepository;
+import com.school_management_webapi.entity.AuditAction;
 
 import lombok.RequiredArgsConstructor;
 
@@ -58,6 +59,8 @@ public class RoleServiceImpl implements RoleService {
 	private final RoleRepository roleRepository;
 	private final TenantUserRepository tenantUserRepository;
 	private final TenantAuthorizationService tenantAuthorizationService;
+	private final NotificationService notificationService;
+	private final AuditService auditService;
 
 	@Override
 	public List<RoleResponse> list(UUID userId) {
@@ -89,7 +92,11 @@ public class RoleServiceImpl implements RoleService {
 				.branchIds(request.branchIds() == null ? new ArrayList<>() : new ArrayList<>(request.branchIds()))
 				.build();
 
-		return RoleMapper.toResponse(roleRepository.saveAndFlush(role), 0L);
+		RoleResponse created = RoleMapper.toResponse(roleRepository.saveAndFlush(role), 0L);
+		auditService.record(userId, AuditAction.ROLE_CREATED, role.getName());
+		notificationService.notifySchool(userId, NotificationEvent.ROLE_CHANGED,
+				"The role " + role.getName() + " was created.", "/settings/users-roles");
+		return created;
 	}
 
 	@Override
@@ -104,8 +111,12 @@ public class RoleServiceImpl implements RoleService {
 		role.setPermissions(RoleMapper.toPermissions(request.permissions()));
 		role.setBranchIds(request.branchIds() == null ? new ArrayList<>() : new ArrayList<>(request.branchIds()));
 
-		return RoleMapper.toResponse(roleRepository.saveAndFlush(role),
+		RoleResponse updated = RoleMapper.toResponse(roleRepository.saveAndFlush(role),
 				tenantUserRepository.countByRoleId(role.getId()));
+		auditService.record(userId, AuditAction.ROLE_UPDATED, role.getName());
+		notificationService.notifySchool(userId, NotificationEvent.ROLE_CHANGED,
+				"The role " + role.getName() + " was changed.", "/settings/users-roles");
+		return updated;
 	}
 
 	@Override
@@ -120,6 +131,9 @@ public class RoleServiceImpl implements RoleService {
 		}
 
 		roleRepository.delete(role);
+		auditService.record(userId, AuditAction.ROLE_DELETED, role.getName());
+		notificationService.notifySchool(userId, NotificationEvent.ROLE_CHANGED,
+				"The role " + role.getName() + " was deleted.", "/settings/users-roles");
 	}
 
 	private void seedDefaultsIfMissing(UUID tenantId) {

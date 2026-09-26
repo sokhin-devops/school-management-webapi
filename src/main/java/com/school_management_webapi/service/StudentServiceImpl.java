@@ -36,6 +36,7 @@ public class StudentServiceImpl implements StudentService {
 	private final SchoolRepository schoolRepository;
 	private final TenantAuthorizationService tenantAuthorizationService;
 	private final SubscriptionLimitService subscriptionLimitService;
+	private final NotificationService notificationService;
 
 	@Override
 	public StudentResponse create(UUID userId, StudentCreateRequest request) {
@@ -50,7 +51,11 @@ public class StudentServiceImpl implements StudentService {
 		}
 
 		Student student = StudentMapper.toEntity(request);
-		return StudentMapper.toResponse(studentRepository.saveAndFlush(student));
+		StudentResponse created = StudentMapper.toResponse(studentRepository.saveAndFlush(student));
+		notificationService.notifySchool(userId, NotificationEvent.STUDENT_ENROLLED,
+				request.firstName() + " " + request.lastName() + " (" + request.studentCode() + ") was enrolled.",
+				"/people/students");
+		return created;
 	}
 
 	@Override

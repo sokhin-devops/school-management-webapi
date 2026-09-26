@@ -22,5 +22,6 @@ public record TenantUserResponse(
 		List<UUID> branchIds,
 		UserStatus status,
 		LocalDateTime lastLoginAt,
-		LocalDateTime createdAt) {
+		LocalDateTime createdAt,
+		boolean twoFactorEnabled) {
 }

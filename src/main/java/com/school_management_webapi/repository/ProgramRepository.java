@@ -1,5 +1,7 @@
 package com.school_management_webapi.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,4 +17,6 @@ public interface ProgramRepository extends JpaRepository<Program, UUID>, JpaSpec
 	Optional<Program> findByCodeAndBranchId(String code, UUID branchId);
 
 	long countByBranchIdIn(java.util.Collection<UUID> branchIds);
+
+	List<Program> findByBranchIdIn(Collection<UUID> branchIds);
 }

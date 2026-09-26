@@ -19,6 +19,7 @@ public final class UserMapper {
 				user.getEmailVerifiedAt(),
 				user.getLastLoginAt(),
 				user.getCreatedAt(),
-				tenantId);
+				tenantId,
+				user.isTwoFactorEnabled());
 	}
 }

@@ -61,6 +61,17 @@ public class School {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String address;
 
+	/** How the school is written where the full name will not fit - reports, the topbar. */
+	@Column(name = "short_name", length = 30)
+	private String shortName;
+
+	@Column(name = "website", length = 255)
+	private String website;
+
+	/** ISO 4217. Every amount in the web app is shown in it; amounts are stored as plain numbers. */
+	@Column(name = "currency", length = 3)
+	private String currency;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private SchoolStatus status;

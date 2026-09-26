@@ -40,6 +40,7 @@ public class AssessmentScoreServiceImpl implements AssessmentScoreService {
 	private final AssessmentRepository assessmentRepository;
 	private final AssessmentScoreRepository assessmentScoreRepository;
 	private final BranchScopeService branchScopeService;
+	private final NotificationService notificationService;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -69,9 +70,17 @@ public class AssessmentScoreServiceImpl implements AssessmentScoreService {
 						.build())
 				.toList());
 
+		boolean wasGraded = Boolean.TRUE.equals(assessment.getGraded());
 		assessment.setAverageScore(averageOf(saved));
 		assessment.setGraded(saved.stream().anyMatch(score -> score.getScore() != null));
 		assessmentRepository.saveAndFlush(assessment);
+
+		// Told once, when marks first appear; every later correction to the
+		// sheet would otherwise ring the bell again.
+		if (!wasGraded && Boolean.TRUE.equals(assessment.getGraded())) {
+			notificationService.notifySchool(userId, NotificationEvent.GRADES_PUBLISHED,
+					"Marks are in for " + assessment.getName() + ".", "/exams");
+		}
 
 		return toResponse(assessment, saved);
 	}

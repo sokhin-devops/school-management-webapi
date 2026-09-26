@@ -52,6 +52,9 @@ public class SchoolServiceImpl implements SchoolService {
 				.email(request.email().trim())
 				.phone(request.phone().trim())
 				.address(request.address().trim())
+				.shortName(blankToNull(request.shortName()))
+				.website(blankToNull(request.website()))
+				.currency(request.currency() != null ? request.currency() : "USD")
 				.status(SchoolStatus.ACTIVE)
 				.build();
 
@@ -87,6 +90,11 @@ public class SchoolServiceImpl implements SchoolService {
 		school.setEmail(request.email().trim());
 		school.setPhone(request.phone().trim());
 		school.setAddress(request.address().trim());
+		school.setShortName(blankToNull(request.shortName()));
+		school.setWebsite(blankToNull(request.website()));
+		if (request.currency() != null) {
+			school.setCurrency(request.currency());
+		}
 
 		return SchoolMapper.toResponse(schoolRepository.saveAndFlush(school));
 	}
@@ -117,5 +125,9 @@ public class SchoolServiceImpl implements SchoolService {
 					throw new ApiException(HttpStatus.CONFLICT, "SCHOOL_NAME_ALREADY_EXISTS",
 							"A school named '" + name + "' already exists for this tenant.");
 				});
+	}
+
+	private static String blankToNull(String value) {
+		return value == null || value.isBlank() ? null : value.trim();
 	}
 }

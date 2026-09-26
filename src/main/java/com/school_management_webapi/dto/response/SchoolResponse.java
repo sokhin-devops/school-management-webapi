@@ -14,6 +14,9 @@ public record SchoolResponse(
 		String email,
 		String phone,
 		String address,
+		String shortName,
+		String website,
+		String currency,
 		SchoolStatus status,
 		LocalDateTime createdAt,
 		LocalDateTime updatedAt) {

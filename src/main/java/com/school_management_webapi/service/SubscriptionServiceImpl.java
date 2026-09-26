@@ -12,6 +12,7 @@ import com.school_management_webapi.dto.request.CancelSubscriptionRequest;
 import com.school_management_webapi.dto.request.PlanSelectionRequest;
 import com.school_management_webapi.dto.response.SubscriptionCancelResponse;
 import com.school_management_webapi.dto.response.SubscriptionResponse;
+import com.school_management_webapi.entity.AuditAction;
 import com.school_management_webapi.entity.Plan;
 import com.school_management_webapi.entity.PlanStatus;
 import com.school_management_webapi.entity.Subscription;
@@ -38,6 +39,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	private final PlanRepository planRepository;
 	private final TenantRepository tenantRepository;
 	private final TenantAuthorizationService tenantAuthorizationService;
+	private final SubscriptionBillingService billingService;
+	private final AuditService auditService;
 
 	@Override
 	public SubscriptionResponse selectPlan(UUID userId, PlanSelectionRequest request) {
@@ -59,7 +62,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 				.startAt(LocalDateTime.now())
 				.build();
 
-		return SubscriptionMapper.toResponse(subscriptionRepository.save(subscription));
+		Subscription saved = subscriptionRepository.save(subscription);
+		// The first period starts now and is billed; without an end date there
+		// was nothing to show as "Renews on".
+		billingService.startPeriod(saved);
+		return SubscriptionMapper.toResponse(saved);
 	}
 
 	@Override
@@ -93,10 +100,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 		log.info("Tenant {} changing plan {} -> {} ({})", tenantId, current.getPlan().getCode(), newPlan.getCode(),
 				upgrade ? "upgrade" : "downgrade");
 
+		String previous = current.getPlan().getName();
 		current.setPlan(newPlan);
 		current.setBillingCycle(request.billingCycle());
 
-		return SubscriptionMapper.toResponse(subscriptionRepository.save(current));
+		Subscription saved = subscriptionRepository.save(current);
+		// A change starts a new period on the new price, so the invoice says what
+		// the school is now paying for.
+		billingService.startPeriod(saved);
+		auditService.record(userId, AuditAction.PLAN_CHANGED, previous + " -> " + newPlan.getName());
+		return SubscriptionMapper.toResponse(saved);
 	}
 
 	@Override
@@ -114,6 +127,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 		subscriptionRepository.save(current);
 
 		log.info("Tenant {} canceled subscription {}. Reason: {}", tenantId, current.getId(), request.reason());
+		auditService.record(userId, AuditAction.PLAN_CANCELED, request.reason());
 
 		return new SubscriptionCancelResponse(current.getStatus(), current.getCanceledAt());
 	}

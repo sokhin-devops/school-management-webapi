@@ -31,6 +31,8 @@ public class TeacherServiceImpl implements TeacherService {
 
 	private final TeacherRepository teacherRepository;
 	private final BranchScopeService branchScopeService;
+	private final SubscriptionLimitService subscriptionLimitService;
+	private final NotificationService notificationService;
 
 	@Override
 	public TeacherResponse create(UUID userId, TeacherCreateRequest request) {
@@ -42,8 +44,16 @@ public class TeacherServiceImpl implements TeacherService {
 					"A teacher with employeeNumber '" + request.employeeNumber() + "' already exists in this branch");
 		}
 
+		// The plan sells a number of teachers, as it does students and branches;
+		// only the other two were being held to it.
+		subscriptionLimitService.checkLimit(tenantId, LimitType.TEACHERS,
+				teacherRepository.countByBranchIdIn(branchScopeService.allowedBranchIds(tenantId)));
+
 		Teacher entity = TeacherMapper.toEntity(request);
-		return TeacherMapper.toResponse(teacherRepository.saveAndFlush(entity));
+		TeacherResponse created = TeacherMapper.toResponse(teacherRepository.saveAndFlush(entity));
+		notificationService.notifySchool(userId, NotificationEvent.STAFF_CHANGED,
+				request.firstName() + " " + request.lastName() + " joined the staff.", "/people/teachers");
+		return created;
 	}
 
 	@Override
@@ -75,7 +85,10 @@ public class TeacherServiceImpl implements TeacherService {
 		ensureEmployeeNumberIsAvailable(id, request.employeeNumber(), request.branchId());
 
 		TeacherMapper.updateEntity(entity, request);
-		return TeacherMapper.toResponse(teacherRepository.saveAndFlush(entity));
+		TeacherResponse updated = TeacherMapper.toResponse(teacherRepository.saveAndFlush(entity));
+		notificationService.notifySchool(userId, NotificationEvent.STAFF_CHANGED,
+				request.firstName() + " " + request.lastName() + "'s record was updated.", "/people/teachers");
+		return updated;
 	}
 
 	@Override

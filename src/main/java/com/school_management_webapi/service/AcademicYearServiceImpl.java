@@ -1,6 +1,7 @@
 package com.school_management_webapi.service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.school_management_webapi.dto.request.AcademicYearRequest;
 import com.school_management_webapi.dto.response.AcademicYearResponse;
+import com.school_management_webapi.entity.AcademicTerm;
 import com.school_management_webapi.entity.AcademicYear;
 import com.school_management_webapi.entity.School;
 import com.school_management_webapi.exception.ApiException;
@@ -51,6 +53,7 @@ public class AcademicYearServiceImpl implements AcademicYearService {
 				.name(name)
 				.startDate(request.startDate())
 				.endDate(request.endDate())
+				.terms(toTerms(request))
 				.current(makeCurrent)
 				.build();
 
@@ -99,6 +102,13 @@ public class AcademicYearServiceImpl implements AcademicYearService {
 		academicYear.setName(name);
 		academicYear.setStartDate(request.startDate());
 		academicYear.setEndDate(request.endDate());
+		if (request.terms() != null) {
+			academicYear.getTerms().clear();
+			academicYear.getTerms().addAll(toTerms(request));
+		} else {
+			// Terms kept as they were still have to fit the year's new dates.
+			requireTermsInside(academicYear.getTerms(), request.startDate(), request.endDate());
+		}
 		academicYear.setCurrent(request.current());
 
 		return AcademicYearMapper.toResponse(academicYearRepository.saveAndFlush(academicYear));
@@ -134,6 +144,41 @@ public class AcademicYearServiceImpl implements AcademicYearService {
 	private School resolveSchoolForTenant(UUID schoolId, UUID tenantId) {
 		return schoolRepository.findByIdAndTenantId(schoolId, tenantId)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SCHOOL_NOT_FOUND", "School not found."));
+	}
+
+	/**
+	 * The request's terms, checked: each inside the year, each ending after it
+	 * starts, and none overlapping the next - a date can only be in one term.
+	 */
+	private List<AcademicTerm> toTerms(AcademicYearRequest request) {
+		if (request.terms() == null || request.terms().isEmpty()) {
+			return new ArrayList<>();
+		}
+		List<AcademicTerm> terms = request.terms().stream()
+				.map(term -> new AcademicTerm(term.name().trim(), term.startDate(), term.endDate()))
+				.sorted(java.util.Comparator.comparing(AcademicTerm::getStartDate))
+				.collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+		requireTermsInside(terms, request.startDate(), request.endDate());
+		for (int i = 1; i < terms.size(); i++) {
+			if (!terms.get(i).getStartDate().isAfter(terms.get(i - 1).getEndDate())) {
+				throw new ApiException(HttpStatus.BAD_REQUEST, "TERMS_OVERLAP",
+						terms.get(i - 1).getName() + " and " + terms.get(i).getName() + " overlap.");
+			}
+		}
+		return terms;
+	}
+
+	private void requireTermsInside(List<AcademicTerm> terms, LocalDate yearStart, LocalDate yearEnd) {
+		for (AcademicTerm term : terms) {
+			if (term.getEndDate().isBefore(term.getStartDate())) {
+				throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_TERM",
+						term.getName() + " ends before it starts.");
+			}
+			if (term.getStartDate().isBefore(yearStart) || term.getEndDate().isAfter(yearEnd)) {
+				throw new ApiException(HttpStatus.BAD_REQUEST, "TERM_OUTSIDE_YEAR",
+						term.getName() + " falls outside the academic year.");
+			}
+		}
 	}
 
 	private void validateDateRange(LocalDate startDate, LocalDate endDate) {

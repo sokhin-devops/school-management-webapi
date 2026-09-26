@@ -19,6 +19,8 @@ import com.school_management_webapi.entity.AttendanceStatus;
 import com.school_management_webapi.exception.ApiException;
 import com.school_management_webapi.mapper.AttendanceRecordMapper;
 import com.school_management_webapi.repository.AttendanceRecordRepository;
+import com.school_management_webapi.entity.ClassGroup;
+import com.school_management_webapi.repository.ClassGroupRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,6 +38,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 	private final AttendanceRecordRepository attendanceRecordRepository;
 	private final BranchScopeService branchScopeService;
+	private final NotificationService notificationService;
+	private final ClassGroupRepository classGroupRepository;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -76,6 +80,13 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 						.note(entry.note())
 						.build())
 				.toList());
+
+		String className = classGroupRepository.findById(request.classGroupId()).map(ClassGroup::getName)
+				.orElse("A class");
+		notificationService.notifySchool(userId, NotificationEvent.ATTENDANCE_SUBMITTED,
+				className + ": register taken for " + request.attendanceDate()
+						+ (sitting.isEmpty() ? "" : " (" + sitting + ")") + ".",
+				"/attendance");
 
 		return toResponse(request.branchId(), request.classGroupId(), request.attendanceDate(), sitting, saved);
 	}

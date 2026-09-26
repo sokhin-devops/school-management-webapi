@@ -3,6 +3,7 @@ package com.school_management_webapi.repository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,4 +25,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID>, JpaSpec
 			""")
 	BigDecimal sumAmount(@Param("branchIds") Collection<UUID> branchIds, @Param("status") ExpenseStatus status,
 			@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+	List<Expense> findByBranchIdIn(Collection<UUID> branchIds);
 }

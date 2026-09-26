@@ -49,6 +49,8 @@ class StudentServiceImplTenantIsolationTest {
 	private TenantAuthorizationService tenantAuthorizationService;
 	@Mock
 	private SubscriptionLimitService subscriptionLimitService;
+	@Mock
+	private NotificationService notificationService;
 
 	@InjectMocks
 	private StudentServiceImpl studentService;

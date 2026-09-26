@@ -1,5 +1,7 @@
 package com.school_management_webapi.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,4 +12,6 @@ import com.school_management_webapi.entity.Assessment;
 public interface AssessmentRepository extends JpaRepository<Assessment, UUID>, JpaSpecificationExecutor<Assessment> {
 
 	long countByBranchIdIn(java.util.Collection<UUID> branchIds);
+
+	List<Assessment> findByBranchIdIn(Collection<UUID> branchIds);
 }

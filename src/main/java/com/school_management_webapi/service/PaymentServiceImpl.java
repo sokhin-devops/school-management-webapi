@@ -31,6 +31,7 @@ public class PaymentServiceImpl implements PaymentService {
 
 	private final PaymentRepository paymentRepository;
 	private final BranchScopeService branchScopeService;
+	private final NotificationService notificationService;
 
 	@Override
 	public PaymentResponse create(UUID userId, PaymentCreateRequest request) {
@@ -43,7 +44,10 @@ public class PaymentServiceImpl implements PaymentService {
 		}
 
 		Payment entity = PaymentMapper.toEntity(request);
-		return PaymentMapper.toResponse(paymentRepository.saveAndFlush(entity));
+		PaymentResponse created = PaymentMapper.toResponse(paymentRepository.saveAndFlush(entity));
+		notificationService.notifySchool(userId, NotificationEvent.PAYMENT_RECEIVED,
+				request.amount().toPlainString() + " recorded as " + request.reference() + ".", "/finance/payments");
+		return created;
 	}
 
 	@Override

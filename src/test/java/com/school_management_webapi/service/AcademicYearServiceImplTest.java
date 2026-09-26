@@ -119,7 +119,7 @@ class AcademicYearServiceImplTest {
 		AcademicYear current = academicYear("2026-2027", START, END, true);
 		when(academicYearRepository.findByIdAndTenantId(current.getId(), TENANT_ID)).thenReturn(Optional.of(current));
 
-		AcademicYearRequest request = new AcademicYearRequest(school.getId(), "2026-2027", START, END, false);
+		AcademicYearRequest request = new AcademicYearRequest(school.getId(), "2026-2027", START, END, false, null);
 
 		assertThatThrownBy(() -> academicYearService.update(USER_ID, current.getId(), request))
 				.isInstanceOf(ApiException.class)
@@ -141,7 +141,7 @@ class AcademicYearServiceImplTest {
 	}
 
 	private AcademicYearRequest request(String name, LocalDate start, LocalDate end) {
-		return new AcademicYearRequest(school.getId(), name, start, end, false);
+		return new AcademicYearRequest(school.getId(), name, start, end, false, null);
 	}
 
 	private School school() {

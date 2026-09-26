@@ -5,6 +5,7 @@ import com.school_management_webapi.entity.SchoolType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record SchoolRequest(
@@ -16,5 +17,11 @@ public record SchoolRequest(
 
 		@NotBlank(message = "phone is required") @Size(max = 30, message = "phone must be at most 30 characters") String phone,
 
-		@NotBlank(message = "address is required") @Size(max = 1000, message = "address must be at most 1000 characters") String address) {
+		@NotBlank(message = "address is required") @Size(max = 1000, message = "address must be at most 1000 characters") String address,
+
+		@Size(max = 30, message = "shortName must be at most 30 characters") String shortName,
+
+		@Size(max = 255, message = "website must be at most 255 characters") String website,
+
+		@Pattern(regexp = "^[A-Z]{3}$", message = "currency must be a three-letter ISO code such as USD") String currency) {
 }
